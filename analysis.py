@@ -1,15 +1,16 @@
 from dataclasses import dataclass
 from typing import List
 
+import numpy as np
 import pandas as pd
 
 
 class Portfolio:
-    pure_spy = 0.0
-    pure_spx = 0.0
-
-    spy = 0.0
-    spx = 0.0
+    def __init__(self):
+        self.pure_spy = 0.0
+        self.pure_spx = 0.0
+        self.spy = 0.0
+        self.spx = 0.0
 
     def invest(self, levered: bool, amount: float):
         if levered:
@@ -44,9 +45,53 @@ df = df.sort_values('observation_date').reset_index(drop=True)
 
 df['SP500_pct_change'] = df['SP500'].pct_change() + 1
 df['SPX_pct_change'] =  3 * df['SP500'].pct_change() + 1
-print(df)
 
-portfolio = Portfolio()
 vol_threshold = .25
+max_trading_days = 8 * 252
+
+years = df['observation_date'].dt.year.unique()
+start_dates = []
+
+for year in years:
+    year_mask = df['observation_date'].dt.year == year
+    year_dates = df.loc[year_mask, 'observation_date'].tolist()
+    n = min(100, len(year_dates))
+    selected = np.random.choice(year_dates, size=n, replace=False)
+    if year <= 2019:
+        start_dates.extend(selected)
+
+start_dates.sort()
+
+results = []
+for start_date in start_dates:
+    portfolio = Portfolio()
+    subset = df[df['observation_date'] >= start_date].head(max_trading_days)
+
+    for j, (i, row) in enumerate(subset.iterrows()):
+        portfolio.simulate_trading_day(
+            sp500_pct_change=row['SP500_pct_change'],
+            spx_pct_change=row['SPX_pct_change']
+        )
+
+        if j % 14 == 0:
+            levered = row['VIXCLS_norm'] <= vol_threshold
+            portfolio.invest(levered=levered, amount=1000)
+
+    results.append({
+        'start_date': start_date,
+        'pure_spy': portfolio.pure_spy,
+        'pure_spx': portfolio.pure_spx,
+        'heuristic': portfolio.spx + portfolio.spy
+    })
+
+sim_df = pd.DataFrame(results)
+
+print(f'\nTotal simulations: {len(sim_df)}')
+print(f'Avg pure_spy: ${sim_df["pure_spy"].mean():,.2f}')
+print(f'Avg pure_spx: ${sim_df["pure_spx"].mean():,.2f}')
+print(f'Avg heuristic: ${sim_df["heuristic"].mean():,.2f}')
+print(f'Median pure_spy: ${sim_df["pure_spy"].median():,.2f}')
+print(f'Median pure_spx: ${sim_df["pure_spx"].median():,.2f}')
+print(f'Median heuristic: ${sim_df["heuristic"].median():,.2f}')
 
 
