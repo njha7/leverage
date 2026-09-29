@@ -46,7 +46,6 @@ df = df.sort_values('observation_date').reset_index(drop=True)
 df['SP500_pct_change'] = df['SP500'].pct_change() + 1
 df['SPX_pct_change'] =  3 * df['SP500'].pct_change() + 1
 
-vol_threshold = .25
 max_trading_days = 8 * 252
 
 years = df['observation_date'].dt.year.unique()
@@ -62,36 +61,50 @@ for year in years:
 
 start_dates.sort()
 
-results = []
-for start_date in start_dates:
-    portfolio = Portfolio()
-    subset = df[df['observation_date'] >= start_date].head(max_trading_days)
+all_results = []
 
-    for j, (i, row) in enumerate(subset.iterrows()):
-        portfolio.simulate_trading_day(
-            sp500_pct_change=row['SP500_pct_change'],
-            spx_pct_change=row['SPX_pct_change']
-        )
+for vol_threshold in np.arange(0.15, 1.01, 0.15):
+    results = []
 
-        if j % 14 == 0:
-            levered = row['VIXCLS_norm'] <= vol_threshold
-            portfolio.invest(levered=levered, amount=1000)
+    for start_date in start_dates:
+        portfolio = Portfolio()
+        subset = df[df['observation_date'] >= start_date].head(max_trading_days)
 
-    results.append({
-        'start_date': start_date,
-        'pure_spy': portfolio.pure_spy,
-        'pure_spx': portfolio.pure_spx,
-        'heuristic': portfolio.spx + portfolio.spy
-    })
+        for j, (i, row) in enumerate(subset.iterrows()):
+            portfolio.simulate_trading_day(
+                sp500_pct_change=row['SP500_pct_change'],
+                spx_pct_change=row['SPX_pct_change']
+            )
 
-sim_df = pd.DataFrame(results)
+            if j % 14 == 0:
+                levered = row['VIXCLS_norm'] <= vol_threshold
+                portfolio.invest(levered=levered, amount=1000)
+
+        results.append({
+            'start_date': start_date,
+            'pure_spy': portfolio.pure_spy,
+            'pure_spx': portfolio.pure_spx,
+            'heuristic': portfolio.spx + portfolio.spy,
+            'vol_threshold': vol_threshold,
+        })
+
+    all_results.append(pd.DataFrame(results))
+
+sim_df = pd.concat(all_results, ignore_index=True)
 
 print(f'\nTotal simulations: {len(sim_df)}')
-print(f'Avg pure_spy: ${sim_df["pure_spy"].mean():,.2f}')
-print(f'Avg pure_spx: ${sim_df["pure_spx"].mean():,.2f}')
-print(f'Avg heuristic: ${sim_df["heuristic"].mean():,.2f}')
-print(f'Median pure_spy: ${sim_df["pure_spy"].median():,.2f}')
-print(f'Median pure_spx: ${sim_df["pure_spx"].median():,.2f}')
-print(f'Median heuristic: ${sim_df["heuristic"].median():,.2f}')
+print(f'Vol thresholds tested: {sorted(sim_df["vol_threshold"].unique())}')
+print()
+
+for threshold in sorted(sim_df['vol_threshold'].unique()):
+    subset = sim_df[sim_df['vol_threshold'] == threshold]
+    print(f'--- vol_threshold = {threshold:.2f} ---')
+    print(f'  Avg pure_spy: ${subset["pure_spy"].mean():,.2f}')
+    print(f'  Avg pure_spx: ${subset["pure_spx"].mean():,.2f}')
+    print(f'  Avg heuristic: ${subset["heuristic"].mean():,.2f}')
+    print(f'  Median pure_spy: ${subset["pure_spy"].median():,.2f}')
+    print(f'  Median pure_spx: ${subset["pure_spx"].median():,.2f}')
+    print(f'  Median heuristic: ${subset["heuristic"].median():,.2f}')
+    print()
 
 
