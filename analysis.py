@@ -46,6 +46,12 @@ df = df.sort_values('observation_date').reset_index(drop=True)
 df['SP500_pct_change'] = df['SP500'].pct_change() + 1
 df['SPX_pct_change'] =  3 * df['SP500'].pct_change() + 1
 
+weights = np.array([1, 2, 3, 4, 5, 6, 7], dtype=float)
+weights = weights / weights.sum()
+df['VIXCLS_norm_7d_weighted'] = df['VIXCLS_norm'].rolling(window=7).apply(
+    lambda x: np.dot(x, weights), raw=True
+)
+
 max_trading_days = 8 * 252
 
 years = df['observation_date'].dt.year.unique()
@@ -63,7 +69,7 @@ start_dates.sort()
 
 all_results = []
 
-for vol_threshold in np.arange(0.15, 1.01, 0.15):
+for vol_threshold in np.arange(0.15, 1.01, 0.25):
     results = []
 
     for start_date in start_dates:
@@ -77,7 +83,7 @@ for vol_threshold in np.arange(0.15, 1.01, 0.15):
             )
 
             if j % 14 == 0:
-                levered = row['VIXCLS_norm'] <= vol_threshold
+                levered = row['VIXCLS_norm_7d_weighted'] <= vol_threshold
                 portfolio.invest(levered=levered, amount=1000)
 
         results.append({
