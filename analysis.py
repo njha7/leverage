@@ -69,7 +69,7 @@ start_dates.sort()
 
 all_results = []
 
-for vol_threshold in np.arange(0.15, 1.01, 0.25):
+for vol_threshold in np.arange(0.15, 0.26, 0.05):
     results = []
 
     for start_date in start_dates:
@@ -104,13 +104,17 @@ print()
 
 for threshold in sorted(sim_df['vol_threshold'].unique()):
     subset = sim_df[sim_df['vol_threshold'] == threshold]
+    subset["delta"] = subset["heuristic"] - subset["pure_spy"]
     print(f'--- vol_threshold = {threshold:.2f} ---')
-    print(f'  Avg pure_spy: ${subset["pure_spy"].mean():,.2f}')
-    print(f'  Avg pure_spx: ${subset["pure_spx"].mean():,.2f}')
-    print(f'  Avg heuristic: ${subset["heuristic"].mean():,.2f}')
-    print(f'  Median pure_spy: ${subset["pure_spy"].median():,.2f}')
-    print(f'  Median pure_spx: ${subset["pure_spx"].median():,.2f}')
-    print(f'  Median heuristic: ${subset["heuristic"].median():,.2f}')
+    print(f'  Max Underperformance: ${subset["delta"].min():,.2f}')
+    print(f'  Avg delta (vs SPY): ${subset["delta"].mean():,.2f}')
+    print(f'  Delta distribution:')
+    print(f'    5th percentile:  ${subset["delta"].quantile(0.05):,.2f}')
+    print(f'    25th percentile: ${subset["delta"].quantile(0.25):,.2f}')
+    print(f'    50th percentile: ${subset["delta"].median():,.2f}')
+    print(f'    75th percentile: ${subset["delta"].quantile(0.75):,.2f}')
+    print(f'    95th percentile: ${subset["delta"].quantile(0.95):,.2f}')
+    print(f'    Std deviation:   ${subset["delta"].std():,.2f}')
     print()
 
 
