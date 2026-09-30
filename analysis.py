@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import List
 
+import argparse
 import numpy as np
 import pandas as pd
-
 
 class Portfolio:
     def __init__(self):
@@ -31,6 +31,9 @@ class Portfolio:
     def __str__(self) -> str:
         return f"SPY: {self.pure_spy} | SPX: {self.pure_spx} | Heuristic: {self.spx + self.spy}"
 
+parser = argparse.ArgumentParser(description='Volatility-based leverage simulation')
+parser.add_argument('--holding_period_years', type=int, default=5, help='Simulation horizon in years (default: 5)')
+args = parser.parse_args()
 
 sp500 = pd.read_csv('SP500.csv', parse_dates=['observation_date'])
 vix = pd.read_csv('VIXCLS.csv', parse_dates=['observation_date'])
@@ -52,7 +55,8 @@ df['VIXCLS_norm_7d_weighted'] = df['VIXCLS_norm'].rolling(window=7).apply(
     lambda x: np.dot(x, weights), raw=True
 )
 
-max_trading_days = 8 * 252
+holding_period_years = args.holding_period_years
+max_trading_days = holding_period_years * 252
 
 years = df['observation_date'].dt.year.unique()
 start_dates = []
@@ -62,14 +66,14 @@ for year in years:
     year_dates = df.loc[year_mask, 'observation_date'].tolist()
     n = min(100, len(year_dates))
     selected = np.random.choice(year_dates, size=n, replace=False)
-    if year <= 2019:
+    if year <= 2026 - args.holding_period_years:
         start_dates.extend(selected)
 
 start_dates.sort()
 
 all_results = []
 
-for vol_threshold in np.arange(0.15, 0.26, 0.05):
+for vol_threshold in np.arange(15, 22, 2.5):
     results = []
 
     for start_date in start_dates:
@@ -83,7 +87,7 @@ for vol_threshold in np.arange(0.15, 0.26, 0.05):
             )
 
             if j % 14 == 0:
-                levered = row['VIXCLS_norm_7d_weighted'] <= vol_threshold
+                levered = row['VIXCLS'] <= vol_threshold
                 portfolio.invest(levered=levered, amount=1000)
 
         results.append({
