@@ -1,0 +1,37 @@
+
+Total simulations: 9600
+Vol thresholds tested: [np.float64(15.0), np.float64(17.5), np.float64(20.0)]
+
+--- vol_threshold = 15.00 ---
+  Max Underperformance: $-27,482.06
+  Avg delta (vs SPY): $35,079.97
+  Delta distribution:
+    5th percentile:  $-19,722.21
+    25th percentile: $0.00
+    50th percentile: $9,003.89
+    75th percentile: $31,311.50
+    95th percentile: $233,597.24
+    Std deviation:   $73,083.50
+
+--- vol_threshold = 17.50 ---
+  Max Underperformance: $-33,492.68
+  Avg delta (vs SPY): $49,089.34
+  Delta distribution:
+    5th percentile:  $-23,189.40
+    25th percentile: $0.00
+    50th percentile: $18,707.97
+    75th percentile: $49,233.56
+    95th percentile: $292,420.80
+    Std deviation:   $91,576.28
+
+--- vol_threshold = 20.00 ---
+  Max Underperformance: $-35,699.84
+  Avg delta (vs SPY): $56,299.58
+  Delta distribution:
+    5th percentile:  $-25,791.04
+    25th percentile: $-942.60
+    50th percentile: $28,079.87
+    75th percentile: $61,968.22
+    95th percentile: $308,724.83
+    Std deviation:   $96,980.19
+
